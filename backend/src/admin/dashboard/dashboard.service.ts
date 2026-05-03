@@ -19,7 +19,7 @@ export class DashboardService {
         include: {
           package: { select: { codigo_rastreio: true, destinatario: true } },
           atualizado_por: { select: { nome: true } },
-        },
+        } as any,
       }),
       this.getMonthlyVolume(),
     ]);
