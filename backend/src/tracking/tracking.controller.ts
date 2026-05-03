@@ -5,8 +5,8 @@ import {
   Param,
   Body,
   UseGuards,
-  Throttle,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
