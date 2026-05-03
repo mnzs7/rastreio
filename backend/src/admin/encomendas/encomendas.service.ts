@@ -6,21 +6,21 @@ import { ListEncomendasDto } from './dto/list-encomendas.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { PackageStatus } from '@prisma/client';
 
-const TERMINAL = [
+const TERMINAL: PackageStatus[] = [
   PackageStatus.ENTREGUE,
   PackageStatus.DEVOLVIDO,
   PackageStatus.EXTRAVIADO,
   PackageStatus.CANCELADO,
 ];
 
-const EXCEPTIONS = [
+const EXCEPTIONS: PackageStatus[] = [
   PackageStatus.TENTATIVA_ENTREGA,
   PackageStatus.DEVOLVIDO,
   PackageStatus.EXTRAVIADO,
   PackageStatus.CANCELADO,
 ];
 
-const NORMAL_FLOW = [
+const NORMAL_FLOW: PackageStatus[] = [
   PackageStatus.AGUARDANDO_COLETA,
   PackageStatus.COLETADO,
   PackageStatus.EM_TRANSITO,
@@ -151,7 +151,7 @@ export class EncomendasService {
         endereco_destino: true,
         historico: {
           orderBy: { data_atualizacao: 'desc' },
-          include: { atualizado_por: { select: { id: true, nome: true } } },
+          include: { atualizado_por: { select: { id: true, nome: true } } } as any,
         },
         criado_por: { select: { id: true, nome: true, email: true } },
       },
