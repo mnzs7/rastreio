@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rastreio_postgres
+    environment:
+      POSTGRES_USER: rastreio
+      POSTGRES_PASSWORD: rastreio123
+      POSTGRES_DB: rastreio_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rastreio_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rastreio -d rastreio_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rastreio_backend
+    environment:
+      DATABASE_URL: postgresql://rastreio:rastreio123@postgres:5432/rastreio_db
+      JWT_SECRET: sua-chave-secreta-super-segura-mude-em-producao
+      JWT_EXPIRES_IN: 7d
+      PORT: 3000
+      NODE_ENV: production
+      THROTTLE_TTL: 60
+      THROTTLE_LIMIT: 100
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rastreio_network
+    command: sh -c "npx prisma migrate deploy && node dist/prisma/seed.js && node dist/main"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rastreio_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - rastreio_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: rastreio_postgres_data
+
+networks:
+  rastreio_network:
+    name: rastreio_network
+    driver: bridge

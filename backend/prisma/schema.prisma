@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CLIENTE
+}
+
+enum PackageStatus {
+  AGUARDANDO_COLETA
+  COLETADO
+  EM_TRANSITO
+  EM_SEPARACAO
+  SAIU_PARA_ENTREGA
+  ENTREGUE
+  DEVOLVIDO
+  EXTRAVIADO
+}
+
+model User {
+  id         String    @id @default(uuid())
+  nome       String    @db.VarChar(255)
+  email      String    @unique @db.VarChar(255)
+  senha      String    @db.VarChar(255)
+  role       Role      @default(CLIENTE)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  packages   Package[]
+
+  @@map("users")
+}
+
+model Package {
+  id                    String          @id @default(uuid())
+  codigo_rastreio       String          @unique @db.VarChar(20)
+  remetente             String          @db.VarChar(255)
+  destinatario          String          @db.VarChar(255)
+  status_atual          PackageStatus   @default(AGUARDANDO_COLETA)
+  descricao             String?         @db.Text
+  peso                  Float?
+  data_envio            DateTime        @default(now())
+  data_entrega_prevista DateTime?
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @updatedAt
+  criado_por_id         String
+  criado_por            User            @relation(fields: [criado_por_id], references: [id])
+  historico             StatusHistory[]
+
+  @@map("packages")
+}
+
+model StatusHistory {
+  id               String        @id @default(uuid())
+  encomenda_id     String
+  encomenda        Package       @relation(fields: [encomenda_id], references: [id], onDelete: Cascade)
+  status           PackageStatus
+  localizacao      String?       @db.VarChar(255)
+  observacao       String?       @db.Text
+  data_atualizacao DateTime      @default(now())
+
+  @@map("status_history")
+}

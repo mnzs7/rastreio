@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2021",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "../dist/prisma",
+    "rootDir": "."
+  },
+  "include": ["seed.ts"]
+}
