@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
@@ -42,5 +43,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Obter dados do usuário logado' })
   me(@CurrentUser() user: any) {
     return this.authService.me(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Alterar senha do usuário logado' })
+  changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: any) {
+    return this.authService.changePassword(user.id, dto);
   }
 }

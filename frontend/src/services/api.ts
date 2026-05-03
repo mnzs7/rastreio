@@ -36,6 +36,8 @@ export const authApi = {
   login: (email: string, senha: string) =>
     api.post<any, any>('/auth/login', { email, senha }),
   me: () => api.get<any, any>('/auth/me'),
+  changePassword: (data: { senha_atual: string; nova_senha: string }) =>
+    api.patch<any, any>('/auth/change-password', data),
 };
 
 export const packagesApi = {
