@@ -31,8 +31,5 @@ Thumbs.db
 coverage/
 */coverage/
 
-# Prisma
-backend/prisma/migrations/
-
 # Vite
 *.local
