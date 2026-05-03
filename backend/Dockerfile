@@ -25,6 +25,8 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package*.json ./
 
+RUN chown -R nestjs:nodejs /app
+
 USER nestjs
 
 EXPOSE 3000
