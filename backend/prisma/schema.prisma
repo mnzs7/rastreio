@@ -19,50 +19,88 @@ enum PackageStatus {
   EM_SEPARACAO
   SAIU_PARA_ENTREGA
   ENTREGUE
+  TENTATIVA_ENTREGA
   DEVOLVIDO
   EXTRAVIADO
+  CANCELADO
 }
 
 model User {
-  id         String    @id @default(uuid())
-  nome       String    @db.VarChar(255)
-  email      String    @unique @db.VarChar(255)
-  senha      String    @db.VarChar(255)
-  role       Role      @default(CLIENTE)
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
+  id         String          @id @default(uuid())
+  nome       String          @db.VarChar(255)
+  email      String          @unique @db.VarChar(255)
+  senha      String          @db.VarChar(255)
+  role       Role            @default(CLIENTE)
+  created_at DateTime        @default(now())
+  updated_at DateTime        @updatedAt
   packages   Package[]
+  historicos StatusHistory[]
 
   @@map("users")
 }
 
+model Endereco {
+  id          String    @id @default(uuid())
+  cep         String    @db.VarChar(9)
+  logradouro  String    @db.VarChar(255)
+  numero      String    @db.VarChar(20)
+  complemento String?   @db.VarChar(100)
+  bairro      String    @db.VarChar(100)
+  cidade      String    @db.VarChar(100)
+  estado      String    @db.VarChar(2)
+  pais        String    @default("Brasil") @db.VarChar(50)
+  created_at  DateTime  @default(now())
+
+  como_origem  Package[] @relation("EnderecoOrigem")
+  como_destino Package[] @relation("EnderecoDestino")
+
+  @@map("enderecos")
+}
+
 model Package {
-  id                    String          @id @default(uuid())
-  codigo_rastreio       String          @unique @db.VarChar(20)
-  remetente             String          @db.VarChar(255)
-  destinatario          String          @db.VarChar(255)
-  status_atual          PackageStatus   @default(AGUARDANDO_COLETA)
-  descricao             String?         @db.Text
+  id                    String        @id @default(uuid())
+  codigo_rastreio       String        @unique @db.VarChar(20)
+
+  remetente             String        @db.VarChar(255)
+  remetente_email       String?       @db.VarChar(255)
+  remetente_telefone    String?       @db.VarChar(20)
+  endereco_origem_id    String?
+  endereco_origem       Endereco?     @relation("EnderecoOrigem", fields: [endereco_origem_id], references: [id])
+
+  destinatario          String        @db.VarChar(255)
+  destinatario_email    String?       @db.VarChar(255)
+  destinatario_telefone String?       @db.VarChar(20)
+  endereco_destino_id   String?
+  endereco_destino      Endereco?     @relation("EnderecoDestino", fields: [endereco_destino_id], references: [id])
+
+  status_atual          PackageStatus @default(AGUARDANDO_COLETA)
+  descricao             String?       @db.Text
   peso                  Float?
-  data_envio            DateTime        @default(now())
+  data_envio            DateTime      @default(now())
   data_entrega_prevista DateTime?
-  created_at            DateTime        @default(now())
-  updated_at            DateTime        @updatedAt
+  data_entrega_real     DateTime?
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
   criado_por_id         String
-  criado_por            User            @relation(fields: [criado_por_id], references: [id])
+  criado_por            User          @relation(fields: [criado_por_id], references: [id])
   historico             StatusHistory[]
 
   @@map("packages")
 }
 
 model StatusHistory {
-  id               String        @id @default(uuid())
-  encomenda_id     String
-  encomenda        Package       @relation(fields: [encomenda_id], references: [id], onDelete: Cascade)
-  status           PackageStatus
-  localizacao      String?       @db.VarChar(255)
-  observacao       String?       @db.Text
-  data_atualizacao DateTime      @default(now())
+  id                String         @id @default(uuid())
+  encomenda_id      String
+  encomenda         Package        @relation(fields: [encomenda_id], references: [id], onDelete: Cascade)
+  status            PackageStatus
+  status_anterior   PackageStatus?
+  localizacao       String?        @db.VarChar(255)
+  latitude          Float?
+  longitude         Float?
+  observacao        String?        @db.Text
+  atualizado_por_id String?
+  atualizado_por    User?          @relation(fields: [atualizado_por_id], references: [id])
+  data_atualizacao  DateTime       @default(now())
 
   @@map("status_history")
 }

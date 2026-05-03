@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
@@ -8,8 +8,9 @@ import { HomePage } from './pages/Home';
 import { TrackPage } from './pages/Track';
 import { LoginPage } from './pages/Login';
 import { AdminPage } from './pages/Admin';
-import { PackageDetailPage } from './pages/Admin/PackageDetail';
-import { CreatePackagePage } from './pages/Admin/CreatePackage';
+import { EncomendasPage } from './pages/Admin/Encomendas';
+import { NovaEncomendaPage } from './pages/Admin/Encomendas/Nova';
+import { DetalheEncomendaPage } from './pages/Admin/Encomendas/Detalhe';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/track/:codigo" element={<TrackPage />} />
               <Route path="/login" element={<LoginPage />} />
+
               <Route
                 path="/admin"
                 element={
@@ -39,21 +41,34 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/packages/new"
+                path="/admin/encomendas"
                 element={
                   <ProtectedRoute role="ADMIN">
-                    <CreatePackagePage />
+                    <EncomendasPage />
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/admin/packages/:id"
+                path="/admin/encomendas/nova"
                 element={
                   <ProtectedRoute role="ADMIN">
-                    <PackageDetailPage />
+                    <NovaEncomendaPage />
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/encomendas/:id"
+                element={
+                  <ProtectedRoute role="ADMIN">
+                    <DetalheEncomendaPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Redireciona rotas antigas */}
+              <Route path="/admin/packages/new" element={<Navigate to="/admin/encomendas/nova" replace />} />
+              <Route path="/admin/packages/:id" element={<Navigate to="/admin/encomendas" replace />} />
+
               <Route
                 path="*"
                 element={

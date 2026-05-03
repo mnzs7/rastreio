@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PackagesModule } from './packages/packages.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { AdminModule } from './admin/admin.module';
+import { MailModule } from './mail/mail.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -23,6 +25,8 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     UsersModule,
     PackagesModule,
     TrackingModule,
+    AdminModule,
+    MailModule,
   ],
   providers: [
     {

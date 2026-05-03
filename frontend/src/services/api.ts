@@ -55,3 +55,22 @@ export const trackingApi = {
   addHistory: (packageId: string, data: Record<string, unknown>) =>
     api.post<any, any>(`/tracking/${packageId}/history`, data),
 };
+
+export const adminEncomendasApi = {
+  list: (params?: Record<string, unknown>) =>
+    api.get<any, any>('/admin/encomendas', { params }),
+  get: (id: string) => api.get<any, any>(`/admin/encomendas/${id}`),
+  create: (data: Record<string, unknown>) =>
+    api.post<any, any>('/admin/encomendas', data),
+  updateStatus: (id: string, data: Record<string, unknown>) =>
+    api.patch<any, any>(`/admin/encomendas/${id}/status`, data),
+  remove: (id: string) => api.delete<any, any>(`/admin/encomendas/${id}`),
+};
+
+export const adminEnderecosApi = {
+  lookupCep: (cep: string) => api.get<any, any>(`/admin/enderecos/cep/${cep}`),
+};
+
+export const adminDashboardApi = {
+  stats: () => api.get<any, any>('/admin/dashboard/stats'),
+};
