@@ -25,7 +25,6 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'admin@rastreio.com', senha: 'admin123' },
   });
 
   if (isAuthenticated) {
@@ -108,10 +107,6 @@ export function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-xs text-gray-500 space-y-1">
-            <p className="font-medium text-gray-600">Credenciais de teste:</p>
-            <p>Admin: <span className="font-mono">admin@rastreio.com</span> / <span className="font-mono">admin123</span></p>
-          </div>
         </div>
       </div>
     </div>

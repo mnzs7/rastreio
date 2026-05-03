@@ -37,7 +37,7 @@ export function HomePage() {
                 type="text"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-                placeholder="Ex: BR123456789BR"
+                placeholder="Digite o código de rastreio"
                 className="w-full pl-11 pr-4 py-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                 maxLength={30}
               />
@@ -52,17 +52,6 @@ export function HomePage() {
           </div>
         </form>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          {['BR123456789BR', 'BR987654321BR', 'BR555444333BR'].map((code) => (
-            <button
-              key={code}
-              onClick={() => navigate(`/track/${code}`)}
-              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors"
-            >
-              Testar: {code}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto px-4">
