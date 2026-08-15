@@ -314,3 +314,18 @@ npm run test:cov
 # Testes E2E (requer banco rodando)
 npm run test:e2e
 ```
+
+---
+
+## 👨‍💻 Autor
+
+**Lucas Menezes**
+Técnico Administrativo na IMBEL → Analista de Dados Jr.
+Cursando Análise e Desenvolvimento de Sistemas (previsão: 2027)
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/mnzslucas)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/mnzs7)
+
+---
+
+> Projeto desenvolvido como parte do portfólio técnico de desenvolvimento full-stack.
