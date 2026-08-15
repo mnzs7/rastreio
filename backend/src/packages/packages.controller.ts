@@ -46,6 +46,10 @@ export class PackagesController {
     return this.packagesService.findAll(query);
   }
 
+  /**
+   * IMPORTANTE: /stats deve vir ANTES de /:id para que o NestJS não
+   * interprete a string "stats" como um parâmetro de rota dinâmico.
+   */
   @Get('stats')
   @ApiOperation({ summary: 'Estatísticas gerais das encomendas' })
   getStats() {
@@ -60,11 +64,13 @@ export class PackagesController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Atualizar status da encomenda' })
-  updateStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdatePackageStatusDto,
-  ) {
-    return this.packagesService.updateStatus(id, dto.status, dto.localizacao, dto.observacao);
+  updateStatus(@Param('id') id: string, @Body() dto: UpdatePackageStatusDto) {
+    return this.packagesService.updateStatus(
+      id,
+      dto.status,
+      dto.localizacao,
+      dto.observacao,
+    );
   }
 
   @Delete(':id')
