@@ -320,8 +320,8 @@ npm run test:e2e
 ## 👨‍💻 Autor
 
 **Lucas Menezes**
-Técnico Administrativo na IMBEL → Analista de Dados Jr.
-Cursando Análise e Desenvolvimento de Sistemas (previsão: 2027)
+Técnico Administrativo na IMBEL → Analista de Dados PL.
+Curso Análise e Desenvolvimento de Sistemas
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/mnzslucas)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/mnzs7)
