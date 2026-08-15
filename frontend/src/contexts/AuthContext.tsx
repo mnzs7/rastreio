@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext, useContext, useState, useEffect, useCallback,
+} from 'react';
 import { User } from '../types';
 import { authApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -15,20 +17,42 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser]       = useState<User | null>(null);
+  const [token, setToken]     = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * Ao montar, valida o token armazenado chamando /auth/me.
+   * Se o token estiver expirado ou inválido, limpa o storage silenciosamente
+   * em vez de deixar o usuário em estado inconsistente até a próxima requisição.
+   */
   useEffect(() => {
     const storedToken = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('auth_user');
+    const storedUser  = localStorage.getItem('auth_user');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    if (!storedToken || !storedUser) {
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false);
+    // Restaura estado otimisticamente para não travar a UI
+    setToken(storedToken);
+    setUser(JSON.parse(storedUser));
+
+    // Confirma validade do token no servidor
+    authApi.me()
+      .then((freshUser: User) => {
+        setUser(freshUser);
+        localStorage.setItem('auth_user', JSON.stringify(freshUser));
+      })
+      .catch(() => {
+        // Token expirado ou inválido — limpa tudo silenciosamente
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, senha: string) => {
