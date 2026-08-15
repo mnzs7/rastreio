@@ -1,5 +1,9 @@
-import { Controller, Post, Patch, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller, Post, Patch, Body, Get,
+  UseGuards, HttpCode, HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -16,12 +20,18 @@ import { Role } from '@prisma/client';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  /**
+   * Rate limit específico no login: máximo 5 tentativas por minuto por IP.
+   * Protege contra ataques de brute-force em credenciais.
+   */
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Fazer login' })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @ApiResponse({ status: 429, description: 'Muitas tentativas. Aguarde 1 minuto.' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
