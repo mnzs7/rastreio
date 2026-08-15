@@ -7,16 +7,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { ListPackagesDto } from './dto/list-packages.dto';
 import { PackageStatus } from '@prisma/client';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class PackagesService {
   constructor(private prisma: PrismaService) {}
 
+  /** Gera código no formato BRxxxxxxxxx9BR usando crypto — sem colisões previsíveis */
   private generateTrackingCode(): string {
-    const prefix = 'BR';
-    const suffix = 'BR';
-    const number = Math.random().toString().slice(2, 11);
-    return `${prefix}${number}${suffix}`;
+    const digits = parseInt(randomBytes(5).toString('hex'), 16)
+      .toString()
+      .slice(0, 9)
+      .padStart(9, '0');
+    return `BR${digits}BR`;
   }
 
   async create(dto: CreatePackageDto, userId: string) {
@@ -26,8 +29,8 @@ export class PackagesService {
     do {
       codigoRastreio = this.generateTrackingCode();
       attempts++;
-      if (attempts > 10) {
-        throw new BadRequestException('Não foi possível gerar código único');
+      if (attempts > 20) {
+        throw new BadRequestException('Não foi possível gerar código único. Tente novamente.');
       }
     } while (
       await this.prisma.package.findUnique({
@@ -55,12 +58,8 @@ export class PackagesService {
         },
       },
       include: {
-        historico: {
-          orderBy: { data_atualizacao: 'desc' },
-        },
-        criado_por: {
-          select: { id: true, nome: true, email: true },
-        },
+        historico: { orderBy: { data_atualizacao: 'desc' } },
+        criado_por: { select: { id: true, nome: true, email: true } },
       },
     });
 
@@ -70,24 +69,21 @@ export class PackagesService {
   async findAll(query: ListPackagesDto) {
     const { status, data_inicio, data_fim, busca, pagina = 1, por_pagina = 10 } = query;
     const skip = (pagina - 1) * por_pagina;
-
     const where: any = {};
 
-    if (status) {
-      where.status_atual = status;
-    }
+    if (status) where.status_atual = status;
 
     if (data_inicio || data_fim) {
       where.data_envio = {};
       if (data_inicio) where.data_envio.gte = new Date(data_inicio);
-      if (data_fim) where.data_envio.lte = new Date(data_fim + 'T23:59:59');
+      if (data_fim)    where.data_envio.lte = new Date(data_fim + 'T23:59:59');
     }
 
     if (busca) {
       where.OR = [
         { codigo_rastreio: { contains: busca, mode: 'insensitive' } },
-        { remetente: { contains: busca, mode: 'insensitive' } },
-        { destinatario: { contains: busca, mode: 'insensitive' } },
+        { remetente:       { contains: busca, mode: 'insensitive' } },
+        { destinatario:    { contains: busca, mode: 'insensitive' } },
       ];
     }
 
@@ -120,45 +116,44 @@ export class PackagesService {
     const pkg = await this.prisma.package.findUnique({
       where: { id },
       include: {
-        historico: {
-          orderBy: { data_atualizacao: 'desc' },
-        },
-        criado_por: {
-          select: { id: true, nome: true, email: true },
-        },
+        historico: { orderBy: { data_atualizacao: 'desc' } },
+        criado_por: { select: { id: true, nome: true, email: true } },
       },
     });
 
-    if (!pkg) {
-      throw new NotFoundException('Encomenda não encontrada');
-    }
-
+    if (!pkg) throw new NotFoundException('Encomenda não encontrada');
     return pkg;
   }
 
-  async updateStatus(id: string, status: PackageStatus, localizacao?: string, observacao?: string) {
-    const pkg = await this.findOne(id);
+  async updateStatus(
+    id: string,
+    status: PackageStatus,
+    localizacao?: string,
+    observacao?: string,
+  ) {
+    await this.findOne(id);
 
-    const updatedPackage = await this.prisma.package.update({
+    /** Preenche data_entrega_real automaticamente quando status = ENTREGUE */
+    const extraData =
+      status === PackageStatus.ENTREGUE
+        ? { data_entrega_real: new Date() }
+        : {};
+
+    return this.prisma.package.update({
       where: { id },
       data: {
         status_atual: status,
+        ...extraData,
         historico: {
           create: {
             status,
-            localizacao: localizacao || null,
-            observacao: observacao || null,
+            localizacao: localizacao ?? null,
+            observacao:  observacao  ?? null,
           },
         },
       },
-      include: {
-        historico: {
-          orderBy: { data_atualizacao: 'desc' },
-        },
-      },
+      include: { historico: { orderBy: { data_atualizacao: 'desc' } } },
     });
-
-    return updatedPackage;
   }
 
   async remove(id: string) {
@@ -170,20 +165,14 @@ export class PackagesService {
   async getStats() {
     const [total, porStatus] = await Promise.all([
       this.prisma.package.count(),
-      this.prisma.package.groupBy({
-        by: ['status_atual'],
-        _count: true,
-      }),
+      this.prisma.package.groupBy({ by: ['status_atual'], _count: true }),
     ]);
 
-    const statusMap = porStatus.reduce((acc, curr) => {
-      acc[curr.status_atual] = curr._count;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusMap = porStatus.reduce(
+      (acc, curr) => { acc[curr.status_atual] = curr._count; return acc; },
+      {} as Record<string, number>,
+    );
 
-    return {
-      total,
-      por_status: statusMap,
-    };
+    return { total, por_status: statusMap };
   }
 }
