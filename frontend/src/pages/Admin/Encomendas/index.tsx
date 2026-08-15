@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Plus, Search, Filter, Package, Eye, Trash2,
-  ChevronLeft, ChevronRight, Loader2, CalendarDays, MapPin,
+  ChevronLeft, ChevronRight, Loader2, CalendarDays, MapPin, AlertTriangle, X,
 } from 'lucide-react';
 import { adminEncomendasApi } from '../../../services/api';
 import { StatusBadge } from '../../../components/StatusBadge';
@@ -18,30 +18,87 @@ const ALL_STATUSES: PackageStatus[] = [
   'EXTRAVIADO', 'CANCELADO',
 ];
 
+const TERMINAL_STATUSES = ['CANCELADO', 'ENTREGUE', 'DEVOLVIDO', 'EXTRAVIADO'];
+
+/** Modal de confirmação — substitui o confirm() nativo */
+function ConfirmModal({
+  codigo,
+  onConfirm,
+  onCancel,
+  isLoading,
+}: {
+  codigo: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="p-2 bg-red-100 rounded-full">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900">Cancelar encomenda</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Tem certeza que deseja cancelar{" "}
+              <span className="font-mono font-medium text-gray-800">{codigo}</span>?
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <button onClick={onCancel} className="ml-auto text-gray-400 hover:text-gray-600">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Manter
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Cancelar encomenda
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EncomendasPage() {
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [page, setPage]               = useState(1);
+  const [search, setSearch]           = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [statusFiltro, setStatusFiltro] = useState<PackageStatus | ''>('');
   const [cidadeOrigem, setCidadeOrigem] = useState('');
   const [cidadeDestino, setCidadeDestino] = useState('');
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
+  const [dataInicio, setDataInicio]   = useState('');
+  const [dataFim, setDataFim]         = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Modal de confirmação
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; codigo: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-encomendas', page, search, statusFiltro, cidadeOrigem, cidadeDestino, dataInicio, dataFim],
     queryFn: () =>
       adminEncomendasApi.list({
-        page,
-        limit: 15,
-        search: search || undefined,
-        status: statusFiltro || undefined,
-        cidade_origem: cidadeOrigem || undefined,
+        page, limit: 15,
+        search:        search        || undefined,
+        status:        statusFiltro  || undefined,
+        cidade_origem: cidadeOrigem  || undefined,
         cidade_destino: cidadeDestino || undefined,
-        data_inicio: dataInicio || undefined,
-        data_fim: dataFim || undefined,
+        data_inicio:   dataInicio    || undefined,
+        data_fim:      dataFim       || undefined,
       }),
   });
 
@@ -49,10 +106,14 @@ export function EncomendasPage() {
     mutationFn: (id: string) => adminEncomendasApi.remove(id),
     onSuccess: () => {
       toast.success('Encomenda cancelada');
+      setConfirmTarget(null);
       queryClient.invalidateQueries({ queryKey: ['admin-encomendas'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => {
+      toast.error(err.message);
+      setConfirmTarget(null);
+    },
   });
 
   const handleSearch = (e: React.FormEvent) => {
@@ -61,27 +122,26 @@ export function EncomendasPage() {
     setPage(1);
   };
 
-  const handleCancel = (id: string, codigo: string) => {
-    if (confirm(`Cancelar encomenda ${codigo}?`)) {
-      cancelMutation.mutate(id);
-    }
-  };
-
   const clearFilters = () => {
-    setSearch('');
-    setSearchInput('');
-    setStatusFiltro('');
-    setCidadeOrigem('');
-    setCidadeDestino('');
-    setDataInicio('');
-    setDataFim('');
-    setPage(1);
+    setSearch(''); setSearchInput(''); setStatusFiltro('');
+    setCidadeOrigem(''); setCidadeDestino('');
+    setDataInicio(''); setDataFim(''); setPage(1);
   };
 
   const hasActiveFilters = search || statusFiltro || cidadeOrigem || cidadeDestino || dataInicio || dataFim;
 
   return (
     <div className="space-y-6">
+      {/* Modal de confirmação */}
+      {confirmTarget && (
+        <ConfirmModal
+          codigo={confirmTarget.codigo}
+          isLoading={cancelMutation.isPending}
+          onConfirm={() => cancelMutation.mutate(confirmTarget.id)}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Encomendas</h1>
@@ -129,7 +189,6 @@ export function EncomendasPage() {
                   <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                 ))}
               </select>
-
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-lg text-sm transition-colors ${
@@ -148,12 +207,9 @@ export function EncomendasPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  <MapPin className="h-3 w-3 inline mr-1" />
-                  Cidade origem
+                  <MapPin className="h-3 w-3 inline mr-1" />Cidade origem
                 </label>
-                <input
-                  type="text"
-                  value={cidadeOrigem}
+                <input type="text" value={cidadeOrigem}
                   onChange={(e) => { setCidadeOrigem(e.target.value); setPage(1); }}
                   placeholder="Ex: São Paulo"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -161,12 +217,9 @@ export function EncomendasPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  <MapPin className="h-3 w-3 inline mr-1" />
-                  Cidade destino
+                  <MapPin className="h-3 w-3 inline mr-1" />Cidade destino
                 </label>
-                <input
-                  type="text"
-                  value={cidadeDestino}
+                <input type="text" value={cidadeDestino}
                   onChange={(e) => { setCidadeDestino(e.target.value); setPage(1); }}
                   placeholder="Ex: Rio de Janeiro"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -174,33 +227,24 @@ export function EncomendasPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  <CalendarDays className="h-3 w-3 inline mr-1" />
-                  Data início
+                  <CalendarDays className="h-3 w-3 inline mr-1" />Data início
                 </label>
-                <input
-                  type="date"
-                  value={dataInicio}
+                <input type="date" value={dataInicio}
                   onChange={(e) => { setDataInicio(e.target.value); setPage(1); }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  <CalendarDays className="h-3 w-3 inline mr-1" />
-                  Data fim
+                  <CalendarDays className="h-3 w-3 inline mr-1" />Data fim
                 </label>
-                <input
-                  type="date"
-                  value={dataFim}
+                <input type="date" value={dataFim}
                   onChange={(e) => { setDataFim(e.target.value); setPage(1); }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="col-span-full text-xs text-red-500 hover:underline text-left"
-                >
+                <button onClick={clearFilters} className="col-span-full text-xs text-red-500 hover:underline text-left">
                   Limpar todos os filtros
                 </button>
               )}
@@ -273,8 +317,8 @@ export function EncomendasPage() {
                             <Eye className="h-4 w-4" />
                           </Link>
                           <button
-                            onClick={() => handleCancel(pkg.id, pkg.codigo_rastreio)}
-                            disabled={['CANCELADO', 'ENTREGUE', 'DEVOLVIDO', 'EXTRAVIADO'].includes(pkg.status_atual)}
+                            onClick={() => setConfirmTarget({ id: pkg.id, codigo: pkg.codigo_rastreio })}
+                            disabled={TERMINAL_STATUSES.includes(pkg.status_atual) || cancelMutation.isPending}
                             className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Cancelar"
                           >
